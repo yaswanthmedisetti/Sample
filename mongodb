@@ -1,2 +1,88 @@
 MongoDB
 
+
+NODE SERVER SETUP 
+CREATE SECURITY GROUP 
+We now need to create security group for Node servers: 
+Security Group Name Use smartwinnr_node_prd_sec_grp_ euwest1   All MongoDB instances Inbound Ports HTTP: 80 (node_elb_security_group_euwest1) 
+Custom TCP: 1443 (node_elb_security_group_euwest1) Outbound Ports All open  
+ 
+Create  a tag for this security group. All resources for the SmartWinnr Production will be having the name tag = smartwinnr_node_prd_sec_grp 
+ 
+CREATE NODE EC2 INSTANCE 
+We will create 1 EC2 instance. Later on we will see how to create more instances from this one using autoscaling etc. 
+EC2 IAM ROLE 
+Since we want to spin other EC2 versions from this using autoscaling etc., we need to use an IAM role while creating the EC2 instance. Go to IAM->Roles. Create a new role EC2NodeUser. (No need to create for new Datacenter like Mumbai, already created). Attach “Mobillions3BackupPolicy” to this role. Now during EC2 instance creation, select this role. 
+ 
+CREATE EC2 INSTANCE 
+Check out CREATE APPROPRIATE EC2 INSTANCE section from Mobillion Amazon Deployment Guide. We just provide the high-level information here: 
+1. Search and select CentOS7 from the Community AMI in Step 1 of launch instance. 
+2.  Instance Details 
+Instance Type (Step 2) General Purpose, t3.medium (old m3.medium), 1 vCPUS, 3.75GB Memory, 1X4 SSD Storage,  Configure Instance Details (Step 3) No. of instances: 1 
+Purchasing option: Leave Default value 
+Network: Default value 
+Subnet: ap-south-east-1a (This will be set to ap-south-east-1b for the other instance. See architecture diagram) 
+Auto-assign Public IP: Default 
+IAM role: EC2NodeUser 
+Shutdown behavior: stop 
+Enable termination protection: Yes Storage (Step 4) Root: Volume 
+Type: Root 
+Device: Default 
+Snapshot: Default 
+Size: 15 GB 
+Volume Type: General Purpose (SSD) 
+IOPS: Default 
+Delete on Termination: False 
+Encrypted: False 
+ 
+App Volume 
+Type: EBS 
+Device: Default 
+Snapshot: None 
+Size: 5 GB (old 20 GB) 
+Volume Type: General Purpose (SSD) 
+IOPS: Default 
+Delete on Termination: False 
+Encrypted: Yes Tag Instance(Step 5) Name: node_apsouth1_swinnr_prd ec2_1 (old smartwinnr_prd_node_1) 
+Group: smartwinnr_prd 
+Owner: MobillionLabs 
+Stack: Node 
+Environment: Production Name the volumes 
+Need to put tag in all the storages after EC2 creation. Go to the Volumes and give the following names: 
+Root Volume smartwinnr_` App Volume smartwinnr_prd_node_app_volume_1 Note: Tags with this names will automatically get created.  
+ 
+BASIC INSTANCE CONFIGURATION 
+NAME THE SERVER 
+Follow instructions from Mobillion Amazon Deployment Guide – Name the Server section. 
+UPDATE THE OS 
+Follow instructions from Mobillion Amazon Deployment Guide – Update the OS section 
+FORMAT NEWLY ATTACHED VOLUMES 
+Follow instruction from Mongodb Format Newly Attached in this document 
+The volume where all node app folders will reside is /apps . Use that during formatting and mounting of volume. 
+Very important – the fstab for the app block should be like: 
+UUID=9ba9f73a-8c2d-4b39-b779-a5d5a90b2885 /apps xfs defaults,auto,noatime,exec 0 0 
+//Check Mail Not Going section in this document for explaination 
+INSTALL AWS CLI 
+Follow instructions from the Initial Setup section 
+INSTALL FFMPEG 
+Refer to https://sysadminxpert.com/install-ffmpeg-on-centos-7/#Step_4_Verify_the_FFmpeg_version 
+ 
+ 
+cd /opt 
+sudo wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz 
+ 
+Verify FFmpeg tar file using md5sum 
+sudo wget https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz.md5 
+md5sum -c ffmpeg-git-amd64-static.tar.xz.md5 
+ 
+//Untar  
+sudo tar xvf ffmpeg*.xz 
+cd ffmpeg-*-static 
+//Simlink 
+sudo ln -s "${PWD}/ffmpeg" /usr/local/bin/ 
+sudo ln -s "${PWD}/ffprobe" /usr/local/bin/ 
+ 
+//Check ffmpeg 
+ 
+ffmpeg 
+
